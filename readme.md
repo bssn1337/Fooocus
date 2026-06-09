@@ -2,9 +2,24 @@
 <img src="https://github.com/lllyasviel/Fooocus/assets/19834515/483fb86d-c9a2-4c20-997c-46dafc124f25">
 </div>
 
-# Fooocus
+# Fooocus — Inpaint & Outpaint Edition
 
-[>>> Click Here to Install Fooocus <<<](#download)
+> **Fork by [bssn1337](https://github.com/bssn1337)** | Based on [lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus)
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/bssn1337/Fooocus/blob/main/Fooocus_Inpaint_Colab.ipynb)
+
+**Versi yang difokuskan hanya untuk Inpaint & Outpaint.** Model diganti ke **Juggernaut XL v9**, UI disederhanakan, dan Colab sudah diperbaiki (fix CuPy error).
+
+### Yang berbeda dari versi original:
+- Hanya tab **Inpaint & Outpaint** yang tampil
+- Model default: **Juggernaut XL v9** (kualitas lebih tinggi)
+- Canvas inpaint lebih besar (640px), prompt selalu terlihat
+- Fix CuPy import error di Google Colab
+- Colab notebook siap pakai: 
+
+---
+
+[>>> Click Here to Install <<<](#download)
 
 Fooocus is an image generating software (based on [Gradio](https://www.gradio.app/) <a href='https://github.com/gradio-app/gradio'><img src='https://img.shields.io/github/stars/gradio-app/gradio'></a>).
 
@@ -109,21 +124,26 @@ See also the common problems and troubleshoots [here](troubleshoot.md).
 
 ### Colab
 
-(Last tested - 2024 Aug 12 by [mashb1t](https://github.com/mashb1t))
+(Last updated - 2026 Jun 10)
 
-| Colab | Info
+| Colab | Info |
 | --- | --- |
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/lllyasviel/Fooocus/blob/main/fooocus_colab.ipynb) | Fooocus Official
+| [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/bssn1337/Fooocus/blob/main/Fooocus_Inpaint_Colab.ipynb) | Fooocus Inpaint & Outpaint Edition (Juggernaut XL v9) |
 
-In Colab, you can modify the last line to `!python entry_with_update.py --share --always-high-vram` or `!python entry_with_update.py --share --always-high-vram --preset anime` or `!python entry_with_update.py --share --always-high-vram --preset realistic` for Fooocus Default/Anime/Realistic Edition.
+Klik **Open in Colab** untuk membuka notebook yang sudah dikonfigurasi:
+- Model **Juggernaut XL v9** (auto-download ~7GB)
+- Fix CuPy error dari versi original
+- Hanya fitur **Inpaint & Outpaint**
 
-You can also change the preset in the UI. Please be aware that this may lead to timeouts after 60 seconds. If this is the case, please wait until the download has finished, change the preset to initial and back to the one you've selected or reload the page.
+**Cara pakai di Colab:**
+1. Runtime → Change runtime type → **T4 GPU**
+2. Run All (Ctrl+F9)
+3. Tunggu link  muncul di output
+4. Klik link untuk buka UI
 
-Note that this Colab will disable refiner by default because Colab free's resources are relatively limited (and some "big" features like image prompt may cause free-tier Colab to disconnect). We make sure that basic text-to-image is always working on free-tier Colab.
+Setup pertama ~15-20 menit (download model). Sesi berikutnya lebih cepat.
 
-Using `--always-high-vram` shifts resource allocation from RAM to VRAM and achieves the overall best balance between performance, flexibility and stability on the default T4 instance. Please find more information [here](https://github.com/lllyasviel/Fooocus/pull/1710#issuecomment-1989185346).
-
-Thanks to [camenduru](https://github.com/camenduru) for the template!
+Using  gives best balance between performance and stability on T4.
 
 ### Linux (Using Anaconda)
 
