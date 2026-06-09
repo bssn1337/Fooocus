@@ -3,23 +3,32 @@ import sys
 import modules.config
 import numpy as np
 import torch
-from extras.GroundingDINO.util.inference import default_groundingdino
-from extras.sam.predictor import SamPredictor
-from rembg import remove, new_session
-from segment_anything import sam_model_registry
-from segment_anything.utils.amg import remove_small_regions
+
+# rembg imports cupy via pymatting - make it optional so Colab doesn't crash
+try:
+    from rembg import remove, new_session
+    REMBG_AVAILABLE = True
+except Exception:
+    REMBG_AVAILABLE = False
+
+# SAM / GroundingDINO - optional heavy deps
+try:
+    from extras.GroundingDINO.util.inference import default_groundingdino
+    from extras.sam.predictor import SamPredictor
+    from segment_anything import sam_model_registry
+    from segment_anything.utils.amg import remove_small_regions
+    SAM_AVAILABLE = True
+except Exception:
+    SAM_AVAILABLE = False
 
 
 class SAMOptions:
     def __init__(self,
-                 # GroundingDINO
                  dino_prompt: str = '',
                  dino_box_threshold=0.3,
                  dino_text_threshold=0.25,
                  dino_erode_or_dilate=0,
                  dino_debug=False,
-
-                 # SAM
                  max_detections=2,
                  model_type='vit_b'
                  ):
@@ -33,12 +42,9 @@ class SAMOptions:
 
 
 def optimize_masks(masks: torch.Tensor) -> torch.Tensor:
-    """
-    removes small disconnected regions and holes
-    """
     fine_masks = []
-    for mask in masks.to('cpu').numpy():  # masks: [num_masks, 1, h, w]
-        fine_masks.append(remove_small_regions(mask[0], 400, mode="holes")[0])
+    for mask in masks.to('cpu').numpy():
+        fine_masks.append(remove_small_regions(mask[0], 400, mode='holes')[0])
     masks = np.stack(fine_masks, axis=0)[:, np.newaxis]
     return torch.from_numpy(masks)
 
@@ -59,14 +65,21 @@ def generate_mask_from_image(image: np.ndarray, mask_model: str = 'sam', extras=
         image = image['image']
 
     if mask_model != 'sam' or sam_options is None:
+        if not REMBG_AVAILABLE:
+            print('[Warning] rembg not available, returning empty mask')
+            return None, dino_detection_count, sam_detection_count, sam_detection_on_mask_count
+
         result = remove(
             image,
             session=new_session(mask_model, **extras),
             only_mask=True,
             **extras
         )
-
         return result, dino_detection_count, sam_detection_count, sam_detection_on_mask_count
+
+    if not SAM_AVAILABLE:
+        print('[Warning] SAM/GroundingDINO not available, returning empty mask')
+        return None, dino_detection_count, sam_detection_count, sam_detection_on_mask_count
 
     detections, boxes, logits, phrases = default_groundingdino(
         image=image,
@@ -100,10 +113,10 @@ def generate_mask_from_image(image: np.ndarray, mask_model: str = 'sam', extras=
 
         if sam_options.dino_debug:
             from PIL import ImageDraw, Image
-            debug_dino_image = Image.new("RGB", (image.shape[1], image.shape[0]), color="black")
+            debug_dino_image = Image.new('RGB', (image.shape[1], image.shape[0]), color='black')
             draw = ImageDraw.Draw(debug_dino_image)
             for box in boxes.numpy():
-                draw.rectangle(box.tolist(), fill="white")
+                draw.rectangle(box.tolist(), fill='white')
             return np.array(debug_dino_image), dino_detection_count, sam_detection_count, sam_detection_on_mask_count
 
         transformed_boxes = sam_predictor.transform.apply_boxes_torch(boxes, image.shape[:2])
