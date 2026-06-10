@@ -24,6 +24,29 @@ from modules.ui_gradio_extensions import reload_javascript
 from modules.auth import auth_enabled, check_auth
 from modules.util import is_json
 
+
+def auto_detect_aspect_ratio(image):
+    if image is None:
+        return gr.update()
+    try:
+        if isinstance(image, dict):
+            image = image.get('image', image.get('composite', None))
+        if image is None:
+            return gr.update()
+        h, w = image.shape[:2]
+        img_ratio = w / h
+        best_label = None
+        best_diff = float('inf')
+        for raw, label in zip(modules.config.available_aspect_ratios, modules.config.available_aspect_ratios_labels):
+            rw, rh = [int(x) for x in raw.split('*')]
+            diff = abs((rw / rh) - img_ratio)
+            if diff < best_diff:
+                best_diff = diff
+                best_label = label
+        return gr.update(value=best_label)
+    except Exception:
+        return gr.update()
+
 def get_task(*args):
     args = list(args)
     args.pop(0)
@@ -133,7 +156,7 @@ def inpaint_mode_change(mode, inpaint_engine_version):
         return [
             gr.update(visible=True), gr.update(visible=False, value=[]),
             gr.Dataset.update(visible=False, samples=modules.config.example_inpaint_prompts),
-            True, inpaint_engine_version, 1.0, 0.0
+            True, inpaint_engine_version, 0.5, 0.0
         ]
 
     return [
@@ -261,6 +284,8 @@ with shared.gradio_root:
                                 inpaint_input_image = grh.Image(label='Upload Image (draw mask to inpaint)', source='upload', type='numpy', tool='sketch', height=640, brush_color="#FFFFFF", elem_id='inpaint_canvas', show_label=False)
                                 inpaint_advanced_masking_checkbox = gr.Checkbox(label='Enable Advanced Masking Features', value=modules.config.default_inpaint_advanced_masking_checkbox)
                                 inpaint_mode = gr.Dropdown(choices=modules.flags.inpaint_options, value=modules.config.default_inpaint_method, label='Method')
+                                gr.HTML("<div style=\"background:#1a3a2a;border-left:4px solid #4ade80;padding:8px;border-radius:4px;font-size:12px;margin:4px 0\"><b>Tips:</b> Ganti warna baju = strength 0.3-0.5 | Ganti texture = 0.5-0.7 | Hapus/tambah = 0.8-1.0</div>")
+                                inpaint_strength_quick = gr.Slider(label="Inpaint Strength (0=pertahankan, 1=ubah sepenuhnya)", minimum=0.1, maximum=1.0, step=0.05, value=0.5)
                                 inpaint_additional_prompt = gr.Textbox(placeholder="Describe what you want to inpaint (leave empty to keep original).", elem_id='inpaint_additional_prompt', label='Inpaint Prompt', visible=True)
                                 outpaint_selections = gr.CheckboxGroup(choices=['Left', 'Right', 'Top', 'Bottom'], value=[], label='Outpaint Direction (expand image)')
                                 example_inpaint_prompts = gr.Dataset(samples=modules.config.example_inpaint_prompts,
@@ -953,11 +978,18 @@ with shared.gradio_root:
                                  queue=False, show_progress=False) \
             .then(fn=lambda: None, _js='refresh_grid_delayed', queue=False, show_progress=False)
 
+        # Auto-detect aspect ratio saat upload foto ke inpaint canvas
+        inpaint_input_image.upload(auto_detect_aspect_ratio, inputs=inpaint_input_image, outputs=aspect_ratios_selection, queue=False, show_progress=False)
+
         inpaint_mode.change(inpaint_mode_change, inputs=[inpaint_mode, inpaint_engine_state], outputs=[
             inpaint_additional_prompt, outpaint_selections, example_inpaint_prompts,
             inpaint_disable_initial_latent, inpaint_engine,
             inpaint_strength, inpaint_respective_field
         ], show_progress=False, queue=False)
+
+        # Sync quick strength slider dengan inpaint_strength di Advanced
+        inpaint_strength_quick.change(lambda v: gr.update(value=v), inputs=inpaint_strength_quick, outputs=inpaint_strength, queue=False, show_progress=False)
+        inpaint_strength.change(lambda v: gr.update(value=v), inputs=inpaint_strength, outputs=inpaint_strength_quick, queue=False, show_progress=False)
 
         # load configured default_inpaint_method
         default_inpaint_ctrls = [inpaint_mode, inpaint_disable_initial_latent, inpaint_engine, inpaint_strength, inpaint_respective_field]
