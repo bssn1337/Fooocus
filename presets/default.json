@@ -35,8 +35,9 @@
     "default_scheduler": "karras",
     "default_performance": "Quality",
     "default_prompt": "",
-    "default_prompt_negative": "nsfw, nude, topless, naked, sexual, explicit, adult content, pornographic",
+    "default_prompt_negative": "",
     "default_styles": [
+        "Fooocus V2",
         "Fooocus Enhance",
         "Fooocus Sharp"
     ],
